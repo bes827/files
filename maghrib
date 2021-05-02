@@ -1,0 +1,295 @@
+
+
+library(shiny)
+library(shinyjs)
+library(glue)
+library(tidyverse)
+library(lubridate)
+library(httr)
+
+# Define UI for displaying current time ----
+ui <- fluidPage(
+  useShinyjs(),
+  textInput("zipp", label = h3("Your ZIP code:"), value = ""),
+  actionButton("act", "Submit"),
+  hr(),
+  htmlOutput("inc"),
+  h2(textOutput("localtime")),
+  h2(textOutput("tillMaghrib")),
+  br(),
+  br(),
+  h2(textOutput("target1")),
+  h2(textOutput("till1")), 
+  uiOutput('my_audio1')
+  
+)
+
+
+
+server <- function(input, output, session) {
+  
+  
+  #functions: 
+  get_time <- function(time = now()) {
+    time %>%
+      str_split(" ") %>%
+      map_chr(2) %>%
+      lubridate::hms()
+  }
+  
+  #upload the zipcode db:
+  zipdb = readRDS(file = "www/zipl.rds")
+  
+  #Define the variables:
+  
+  nzip <- eventReactive(input$act, {
+    req(input$zipp)
+    input$zipp
+  })
+  
+  
+  timezo <- eventReactive(input$act, {
+    req(input$zipp)
+    
+    zipdb %>% 
+      filter(zipdb$zipcode %in% nzip()) %>% 
+      select("timezone") %>% 
+      as.character("timezone")
+  })  
+  
+  
+  output$timezo <- renderText({
+    
+    paste("reactive timezone", timezo())
+  })
+  
+  
+  
+  county <- eventReactive(input$act, {
+    req(input$zipp)
+    
+    zipdb %>% 
+      filter(zipdb$zipcode %in% nzip()) %>% 
+      select("county") %>% 
+      as.character("county")
+  })  
+  
+  
+  state <- eventReactive(input$act, {
+    req(input$zipp)
+    
+    zipdb %>% 
+      filter(zipdb$zipcode %in% nzip()) %>% 
+      select("state") %>% 
+      as.character("state")
+  })  
+  
+  #Extract 
+  #1)Maghrib time 
+  mgr2 <- eventReactive(input$act, {
+    req(input$zipp)
+    r <- GET("http://www.islamicfinder.us/index.php/api/prayer_times", 
+             query = list(zipcode = nzip() , country = "US", method="2", time_format ="0"))
+    xx = content(r)
+    xx = xx$results
+    xx = xx$Maghrib
+    xx = paste(xx, ":00", sep="")  
+    lubridate::hms(xx)
+  })
+  
+  
+  
+  #2)Local time (updates every second):
+  ltime <- reactive({
+    req(input$zipp)
+    invalidateLater(1000, session)
+    
+    get_time(lubridate::with_tz(now(), tzone = paste("US/",timezo(), sep="")))
+  }) 
+  
+  
+  #Times till::
+  #time til Maghrib: 
+  tillMaghrib <- reactive({
+    req(input$zipp)
+    invalidateLater(1000, session)
+    
+    x=as.numeric(mgr2()-ltime())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=seconds_to_period(x1)
+    x2
+    
+  }) 
+  
+  
+  
+  
+  tillduaa <- reactive({
+    req(input$zipp)
+    invalidateLater(1000, session)
+    
+    x=as.numeric(mgr2()-ltime())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=x1-(5*60)
+    x3=seconds_to_period(x2)
+    x3
+  }) 
+  
+  
+  tillquran <- reactive({
+    req(input$zipp)
+    invalidateLater(1000, session)
+    
+    x=as.numeric(mgr2()-ltime())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=x1-(20*60)
+    x3=seconds_to_period(x2)
+    x3
+  })
+  
+  
+  
+  observe({
+    req(input$act)
+    
+    
+    htmop = glue('<hr />
+<p>&nbsp;</p>
+<hr />
+<p><strong>Zip code:</strong>: {nzip()}&nbsp;</p>
+<p><strong>State: </strong>{state()}&nbsp;</p>
+<p><strong>County: </strong>{county()}</p>
+<p><strong>Time zone: </strong>{timezo()}&nbsp;</p>
+<p><strong>Maghrib:</strong> {mgr2()}</p>
+<hr />
+<p><strong>Local time:</strong> {ltime()}</p>
+<p><strong>Time till Quran(-20)</strong>: {tillquran()}</p>
+<p><strong>Time till Maghrib (azan)</strong>: {tillMaghrib()}</p>
+<hr />
+<p>&nbsp;</p>')
+    
+    
+    output$inc<-renderUI({
+      HTML (htmop)
+    })
+    
+  })
+  
+  
+  #collect(cache) fixed time points (after pressing submit):
+  #
+  #
+  
+  ltime.fix <- reactive({
+    req(input$act)
+    
+    
+    get_time(lubridate::with_tz(now(), tzone = paste("US/",timezo(), sep="")))
+  }) 
+  
+  
+  
+  adan.fix <- reactive({
+    req(input$act)
+    x=as.numeric(mgr2()-ltime.fix())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=seconds_to_period(x1)
+    x2
+    
+  })
+  
+  
+  tillMaghrib.fix <- reactive({
+    req(input$act)
+    x=as.numeric(mgr2()-ltime.fix())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=seconds_to_period(x1)
+    x2
+    
+  }) 
+  
+  
+  
+  
+  tillduaa.fix <- reactive({
+    req(input$act)
+    x=as.numeric(mgr2()-ltime.fix())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=x1-(5*60)
+    x3=seconds_to_period(x2)
+    x3
+  }) 
+  
+  
+  tillquran.fix <- reactive({
+    req(input$act)
+    x=as.numeric(mgr2()-ltime.fix())
+    x1=ifelse(x >=0, x,86400+x)
+    x2=x1-(20*60)
+    x3=seconds_to_period(x2)
+    x3
+  })
+  
+  
+  
+  
+  
+  
+  ########Play audios
+  
+  
+  #Play quran anytime the app works:
+  observeEvent(input$act, {
+    output$my_audio1 <-renderUI({
+      tags$audio(src = "https://archive.org/download/jam3_56/003.mp3", 
+                 type = "audio/mp3", autoplay = NA, controls = NA, style="display:none;")
+    })
+    
+  })
+  
+ 
+ 
+  
+  #Play before maghrib Quran: 
+  #
+  
+  observeEvent(input$act, {
+    
+    delayq = period_to_seconds(tillquran.fix())*1000
+    
+    delayq=ifelse(delayq >=0, delayq, 0)
+    
+     
+  
+    delay (delayq, 
+           
+           output$my_audio1 <-renderUI({
+             tags$audio(src = "https://archive.org/download/MohammedMinshawi2962014/Mohammed%20Minshawi%2029-6-2014.mp3", 
+                        type = "audio/mp3", autoplay = NA, controls = NA, style="display:none;")
+           })
+    )  
+    
+    
+  })
+  
+  
+  #Play azan: 
+  observeEvent(input$act, {
+    
+    delay ((period_to_seconds(tillMaghrib.fix()) - 19)  *1000, 
+           
+           output$my_audio1 <-renderUI({
+             tags$audio(src = "https://github.com/bes828/files/blob/main/magrib.mp3?raw=true", 
+                        type = "audio/mp3", autoplay = NA, controls = NA, style="display:none;")
+           })
+    )  
+  })
+  
+ 
+  
+  
+}
+
+# Create Shiny app ----
+shinyApp(ui, server)
+
