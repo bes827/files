@@ -1,19 +1,18 @@
 MCQ:
-from the text I provide you, please create 0qno1 MCQs (ie multiple choice questions, each question with 4-5 choices). 
-      Questions should be clinically relevant, testing and teaching practicing clinicians. all questions, answers and explanation should be from the provided text, do NOT use external sources. 
-      the answer explanation should be exact extraction of the sentences from the next without generating new phrases. 
-output should include: question, choices, correct answer and explanation from the text. 
-format the output so that there is a new line <br> after each sentence, ie add new line after the question, after each choice, and after answer. before every question add <hr>. make sure all questions are in bold <b>. 
-      Text:
+from the text I provide you, please create 0qno1 MCQs (ie multiple choice questions, each question with 4-5 choices). Questions should be clinically relevant, testing and teaching practicing clinicians. all questions, answers and explanation should be from the provided text, do NOT use external sources. the answer explanation should be exact extraction of the sentences from the next without generating new phrases. 
+output should include: question, choices, correct answer and explanation from the text. format the output so that there is a new line <br> after each sentence, ie add new line after the question, after each choice, and after answer. before every question add <hr>. make sure all questions are in bold <b>. 
+Text:
+
 QA: 
 from the text I provide you, please create 0qno1 questions followed by answers. Questions should be clinically relevant, relatively complex, testing and teaching practicing clinicians. all questions, answers and explanation should be from the provided text, do NOT use external sources. the answers and should be exact extraction of the sentences from the next without generating new phrases. 
 output should include: question, correct answer from the text. 
 format the output so that there is a new line <br> after each question and after each answer. before every question add <hr>. make sure all questions are in bold <b>. 
 Text:
+
 TF:
 from the text I provide you, please create 0qno1 true/false followed by answers. Questions should be clinically relevant, relatively complex, testing and teaching practicing clinicians. all questions, answers and explanation should be from the provided text, do NOT use external sources. the answers and should be exact extraction of the sentences from the next without generating new phrases. 
 output should include: question, correct answer from the text. 
 format the output so that there is a new line <br> after each question and after each answer. before every question add <hr>. make sure all questions are in bold <b>. 
 Text:
-END:
 
+END:
